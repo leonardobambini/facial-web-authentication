@@ -1,0 +1,332 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: trust-configuration-bls
+data:
+  trusted-servers: |
+    - http://tsbls1:5000
+    - http://tsbls2:6000
+    - http://tsbls3:7000
+  threshold: "2"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: spbls
+  name: spbls
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: spbls
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: spbls
+    spec:
+      containers:
+      - image: blessedrebus/sp:bls
+        name: spbls
+        env:
+          - name: SERVER_THRESHOLD
+            valueFrom:
+              configMapKeyRef:
+                name: trust-configuration-bls
+                key: threshold
+        ports:
+        - containerPort: 5000
+        resources: {}
+status: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: idpbls
+  name: idpbls
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: idpbls
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: idpbls
+    spec:
+      containers:
+      - image: blessedrebus/idp:bls
+        name: idpbls
+        ports:
+        - containerPort: 3000
+        resources: {}
+status: {}
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: null
+  labels:
+    run: tcbls
+  name: tcbls
+spec:
+  containers: 
+  - image: blessedrebus/tc:bls
+    name: tcbls
+    env:
+    - name: TRUSTED_SERVERS
+      valueFrom:
+        configMapKeyRef:
+          name: trust-configuration-bls
+          key: trusted-servers
+    resources: {}
+  dnsPolicy: ClusterFirst
+  restartPolicy: Never
+status: {}
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: null
+  labels:
+    run: tsbls1
+  name: tsbls1
+spec:
+  containers:
+  - image: blessedrebus/ts:bls
+    name: tsbls1
+    env:
+    - name: SERVER_PORT
+      value: "5000"
+    - name: SERVER_NUMBER
+      value: "1"
+    resources: {}
+  dnsPolicy: ClusterFirst
+  restartPolicy: Never
+status: {}
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: null
+  labels:
+    run: tsbls2
+  name: tsbls2
+spec:
+  containers:
+  - image: blessedrebus/ts:bls
+    name: tsbls2
+    env:
+    - name: SERVER_PORT
+      value: "6000"
+    - name: SERVER_NUMBER
+      value: "2"
+    resources: {}
+  dnsPolicy: ClusterFirst
+  restartPolicy: Never
+status: {}
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: null
+  labels:
+    run: tsbls3
+  name: tsbls3
+spec:
+  containers:
+  - image: blessedrebus/ts:bls
+    name: tsbls3
+    env:
+    - name: SERVER_PORT
+      value: "7000"
+    - name: SERVER_NUMBER
+      value: "3"
+    resources: {}
+  dnsPolicy: ClusterFirst
+  restartPolicy: Never
+status: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: "2023-02-14T14:02:34Z"
+  labels:
+    app: idpbls
+  name: idpbls
+  namespace: default
+  resourceVersion: "198654"
+  uid: b48ce977-f9dc-423c-97c9-e1546883e90e
+spec:
+  clusterIP: 10.106.13.127
+  clusterIPs:
+  - 10.106.13.127
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - port: 3000
+    protocol: TCP
+    targetPort: 3000
+  selector:
+    app: idpbls
+  sessionAffinity: None
+  type: ClusterIP
+status:
+  loadBalancer: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: "2023-02-14T14:02:42Z"
+  labels:
+    app: spbls
+  name: spbls
+  namespace: default
+  resourceVersion: "198666"
+  uid: d302530e-439a-49f0-987d-c31c0e961747
+spec:
+  clusterIP: 10.111.225.46
+  clusterIPs:
+  - 10.111.225.46
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - port: 1111
+    protocol: TCP
+    targetPort: 5000
+  selector:
+    app: spbls
+  sessionAffinity: None
+  type: ClusterIP
+status:
+  loadBalancer: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: "2023-02-14T14:02:50Z"
+  labels:
+    run: tcbls
+  name: tcbls
+  namespace: default
+  resourceVersion: "198676"
+  uid: c8d485e6-c4e3-4097-af3d-f7721217975f
+spec:
+  clusterIP: 10.106.121.181
+  clusterIPs:
+  - 10.106.121.181
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - port: 1234
+    protocol: TCP
+    targetPort: 5000
+  selector:
+    run: tcbls
+  sessionAffinity: None
+  type: ClusterIP
+status:
+  loadBalancer: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: "2023-02-14T14:03:00Z"
+  labels:
+    run: tsbls1
+  name: tsbls1
+  namespace: default
+  resourceVersion: "198685"
+  uid: 54d1efa2-1085-47d2-ab59-bf5f7a0da4d6
+spec:
+  clusterIP: 10.108.69.48
+  clusterIPs:
+  - 10.108.69.48
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - name: tsbls1
+    protocol: TCP
+    port: 5000
+    targetPort: 5000
+  selector:
+    run: tsbls1
+  sessionAffinity: None
+  type: ClusterIP
+status:
+  loadBalancer: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: "2023-02-14T14:03:00Z"
+  labels:
+    run: tsbls2
+  name: tsbls2
+  namespace: default
+  resourceVersion: "198685"
+  uid: 54d1efa2-1085-47d2-ab59-bf5f7a0da4d6
+spec:
+  clusterIP: 10.108.69.49
+  clusterIPs:
+  - 10.108.69.49
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - name: tsbls2
+    protocol: TCP
+    port: 6000
+    targetPort: 5000
+  selector:
+    run: tsbls2
+  sessionAffinity: None
+  type: ClusterIP
+status:
+  loadBalancer: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: "2023-02-14T14:03:00Z"
+  labels:
+    run: tsbls3
+  name: tsbls3
+  namespace: default
+  resourceVersion: "198685"
+  uid: 54d1efa2-1085-47d2-ab59-bf5f7a0da4d6
+spec:
+  clusterIP: 10.108.69.50
+  clusterIPs:
+  - 10.108.69.50
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - name: tsbls3
+    protocol: TCP
+    port: 7000
+    targetPort: 5000
+  selector:
+    run: tsbls3
+  sessionAffinity: None
+  type: ClusterIP
+status:
+  loadBalancer: {}
